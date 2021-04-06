@@ -20,15 +20,19 @@ public class ExtraRoleSupplier implements Supplier<SecurityIdentity> {
     @Transactional
     @Override
     public SecurityIdentity get() {
-        //  Commented for the reproducer
-        // if (identity.isAnonymous()) {
-        //      return () -> identity;
-        // }
-        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
-        // Let's pretend it's business logic, involving blocking IO and EntityManager
-        logger.infof("Adding Extra role");
-        builder.addRole(RestResource.EXTRA);
-        return builder.build();
+        if (identity.isAnonymous()) {
+            return identity;
+        } else {
+            QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
+
+            // Let's pretend it's business logic, involving blocking IO and EntityManager
+            String username = identity.getPrincipal().getName();
+            if ("alice".equals(username)) {
+                logger.infof("Adding Extra role to user '%s'", username);
+                builder.addRole(RestResource.EXTRA);
+            }
+            return builder.build();
+        }
     }
 
     public void setIdentity(final SecurityIdentity identity) {
